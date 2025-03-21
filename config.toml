@@ -1,0 +1,25 @@
+[mysql]
+host = "127.0.0.1"
+port = 23306
+db = "agile"
+user = "jayden"
+password = "jayden@2025"
+maxOpen = 300
+maxIdle = 100
+maxLife = 3600
+migrate = true
+
+[contract]
+indexPath = "./index"
+marketAddress = "0x0485363841220E83D478F2066f354BADAD1e8fcb"
+purchasedEvent = "0x5455e1f43c674b0e790485adf9e64c058a505bbff2e540eba3a4e612a3a85ec4"
+fallbackIndex = 3532992
+indexFile = "holesky.index.json"
+dialInterval = 7
+pullInterval = 3
+requestTimeout = 30
+step = 300
+
+[infura]
+https = "https://holesky.infura.io/v3/d782c0af2aff465f85a8e3933591c605"
+wss = "wss://holesky.infura.io/ws/v3/d782c0af2aff465f85a8e3933591c605"
