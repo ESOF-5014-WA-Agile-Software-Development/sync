@@ -180,7 +180,7 @@ func (c *ContractEvent) ListenEvents() {
 					continue
 				}
 
-				err := c.handleLog(&l)
+				err := c.handleLog(&l, client)
 				if err != nil {
 					fmt.Printf("%v\n", err)
 					break
@@ -198,7 +198,7 @@ func (c *ContractEvent) ListenEvents() {
 	}
 }
 
-func (c *ContractEvent) handleLog(log *types.Log) error {
+func (c *ContractEvent) handleLog(log *types.Log, client *ethclient.Client) error {
 	if len(log.Topics) <= 0 {
 		return nil
 	}
@@ -207,11 +207,18 @@ func (c *ContractEvent) handleLog(log *types.Log) error {
 	switch t {
 	case c.runTime.Config.Contract.PurchasedEvent:
 		// purchase event
+		block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(log.BlockNumber)))
+		if err != nil {
+			return err
+		}
+		timestamp := block.Time()
+
 		l, err := c.marketFilter.ParsePurchased(*log)
 		if err != nil {
 			return err
 		}
-		err = c.syncPurchased(l, log.BlockNumber)
+
+		err = c.syncPurchased(l, log.BlockNumber, timestamp)
 		if err != nil {
 			return err
 		}
@@ -224,16 +231,17 @@ func (c *ContractEvent) handleLog(log *types.Log) error {
 	return nil
 }
 
-func (c *ContractEvent) syncPurchased(event *market.MarketPurchased, block uint64) error {
+func (c *ContractEvent) syncPurchased(event *market.MarketPurchased, block uint64, t uint64) error {
 	amount, _ := event.Amount.Float64()
 
 	err := c.runTime.Mysql.Transaction(func(tx *gorm.DB) error {
 		purchased := models.Purchased{
-			BlockID: block,
-			OfferID: event.OfferId.Uint64(),
-			Seller:  event.Seller.String(),
-			Buyer:   event.Buyer.String(),
-			Amount:  amount,
+			BlockID:   block,
+			OfferID:   event.OfferId.Uint64(),
+			Seller:    event.Seller.String(),
+			Buyer:     event.Buyer.String(),
+			Amount:    amount,
+			Timestamp: t,
 		}
 
 		if e := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&purchased).Error; e != nil {
